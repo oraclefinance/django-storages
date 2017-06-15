@@ -8,6 +8,7 @@ from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_bytes, force_text, smart_str
 from django.utils import timezone
 from storages.utils import clean_name, safe_join, setting
+from gcloud_requests import CloudStorageRequestsProxy
 
 try:
     from google.cloud.storage.client import Client
@@ -103,9 +104,12 @@ class GoogleCloudStorage(Storage):
     @property
     def client(self):
         if self._client is None:
+            proxy = CloudStorageRequestsProxy()
             self._client = Client(
                 project=self.project_id,
-                credentials=self.credentials
+                #credentials=self.credentials,
+                _http=proxy,
+                credentials=proxy.credentials,
             )
         return self._client
 
@@ -120,6 +124,7 @@ class GoogleCloudStorage(Storage):
         Retrieves a bucket if it exists, otherwise creates it.
         """
         try:
+
             return self.client.get_bucket(name)
         except NotFound:
             if self.auto_create_bucket:
